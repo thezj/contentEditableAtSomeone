@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        #mytextarea {
+            height: 300px;
+            width: 400px;
+            border: 1px solid gray;
+            padding: 5px 12px;
+        }
+
+        .filelabel {
+            color: blue;
+            display: inline-block;
+            position: relative;
+        }
+
+        .filelabel2 {
+            color: blue;
+            display: inline-block;
+        }
+
+        .filelabel::before {
+            content: '@';
+            font-size: 10px;
+            position: absolute;
+            left: -5px;
+            top: 2px;
+        }
+    </style>
+</head>
+
+<body>
+    <h3>编辑器</h3>
+    <div id="mytextarea" contenteditable="true"> </div>
+    <button onclick='atsomeone()'>@王二麻子</button>
+
+    <script>
+        let editor = document.querySelector('#mytextarea')
+
+        let selectionlog = _ => {
+            let selection = window.getSelection()
+            console.log("选区起点所在的节点:", selection.anchorNode)
+            console.log("选区起点在anchorNode中的位置偏移:", selection.anchorOffset)
+            console.log("选区终点所在的节点:", selection.focusNode)
+            console.log("选区终点在focusNode中的位置偏移:", selection.focusOffset)
+            console.log("选区起点、终点是否在同一位置:", selection.isCollapsed)
+            console.log("选区所包含的连续范围的数量:", selection.rangeCount)
+            console.log("返回选区中的第一个:", selection.getRangeAt(0))
+        }
+
+        let atsomeone = _ => {
+            let atdiv = document.createElement('div')
+            atdiv.setAttribute('class', 'filelabel')
+            atdiv.innerText = ' ' + '王二麻子' + Math.floor(Math.random() * 10) + ' '
+            let empty = document.createTextNode(" ")
+
+            if (editor.childNodes[editor.childNodes.length - 1].data !== ' ') {
+                //最后一个元素不是空格
+                editor.insertBefore(document.createTextNode(" "), null)
+            }
+            editor.insertBefore(atdiv, null)
+            editor.insertBefore(empty, null)
+        }
+
+        //处理选区包含at区域
+        let disposeAt = e => {
+
+            if (e.type == 'mousedown') {
+                let selection = window.getSelection()
+                if (selection.isCollapsed == false) {
+                    selection.collapse(selection.focusNode, selection.focusOffset)
+                }
+            }
+
+            //左箭头
+            if (e.keyCode == 37 && e.type == 'keyup') {
+                let selection = window.getSelection()
+                if (selection.isCollapsed) {
+                    //移动光标
+                    if (selection.focusNode.parentNode.className == 'filelabel') {
+                        //光标落在at区域
+                        let range = document.createRange()
+                        range.selectNode(selection.focusNode.parentNode.previousSibling)
+                        range.collapse(false)
+                        selection.removeAllRanges()
+                        selection.addRange(range)
+                    }
+                } else {
+                    if (selection.focusNode.parentNode.className == 'filelabel') {
+                        //选区包含at区域
+                        selection.extend(selection.focusNode, 0)
+                    }
+                }
+            }
+
+            //右箭头
+            if (e.keyCode == 39 && e.type == 'keyup') {
+                let selection = window.getSelection()
+                if (selection.isCollapsed) {
+                    //移动光标
+                    if (selection.focusNode.parentNode.className == 'filelabel') {
+                        //光标落在at区域
+                        let range = document.createRange()
+                        range.selectNode(selection.focusNode.parentNode.nextSibling)
+                        range.setEnd(selection.focusNode.parentNode.nextSibling, 1)
+                        range.collapse()
+                        selection.removeAllRanges()
+                        selection.addRange(range)
+                    }
+                } else {
+                    if (selection.focusNode.parentNode.className == 'filelabel') {
+                        //选区包含at区域
+                        selection.extend(selection.focusNode, selection.focusNode.length)
+                    }
+                }
+            }
+
+            if (e.keyCode == 8 || e.keyCode == 46 || e.type == 'click') {
+
+                let selection = window.getSelection()
+                let TPanchorNode = selection.anchorNode
+                let TPanchorOffset = selection.anchorOffset
+                let TPfocusNode = selection.focusNode
+                let TPfocusOffset = selection.focusOffset
+
+                if (e.type == 'keydown' && selection.isCollapsed) {
+                    if (selection.focusNode.nextSibling) {
+                        if (selection.focusNode.length == selection.focusOffset && selection.focusNode.nextSibling.className ==
+                            'filelabel') {
+                            //删除普通文本节点，光标到了最后
+                            let atNode = selection.focusNode.nextSibling
+                            editor.removeChild(atNode)
+                        }
+                    }
+                }
+
+
+                let range = document.createRange()
+                range.setStart(TPanchorNode, TPanchorOffset)
+                range.setEnd(TPfocusNode, TPfocusOffset)
+                let reverseRange = range.collapsed
+                if (reverseRange) {
+                    range.setStart(TPfocusNode, TPfocusOffset)
+                    range.setEnd(TPanchorNode, TPanchorOffset)
+                    selection.removeAllRanges()
+                    selection.addRange(range)
+                }
+
+                //如果选区起点在at区域
+                if (selection.anchorNode.parentNode.className == 'filelabel') {
+                    if (reverseRange) {
+                        range.setStart(TPfocusNode.parentNode.previousSibling, 0)
+                    } else {
+                        range.setStart(TPanchorNode.parentNode.previousSibling, 0)
+                    }
+                }
+
+                //如果选区终点在at区域
+                if (selection.focusNode.parentNode.className == 'filelabel') {
+                    if (reverseRange) {
+                        range.setEnd(TPanchorNode, TPanchorNode.length)
+                    } else {
+                        range.setEnd(TPfocusNode, TPfocusNode.length)
+                    }
+                }
+
+                selection.removeAllRanges()
+                selection.addRange(range)
+
+            }
+        }
+
+        /*
+         *注册删除事件
+         */
+
+        editor.addEventListener('keydown', disposeAt)
+        editor.addEventListener('keyup', disposeAt)
+
+        /*
+         *注册点击事件
+         */
+
+        editor.addEventListener('click', disposeAt)
+        editor.addEventListener('mousedown', disposeAt)
+    </script>
+</body>
+
+</html>
