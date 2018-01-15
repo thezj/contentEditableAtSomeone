@@ -58,14 +58,9 @@
             let atdiv = document.createElement('div')
             atdiv.setAttribute('class', 'filelabel')
             atdiv.innerText = ' ' + '王二麻子' + Math.floor(Math.random() * 10) + ' '
-            let empty = document.createTextNode(" ")
-
-            if (editor.childNodes[editor.childNodes.length - 1].data !== ' ') {
-                //最后一个元素不是空格
-                editor.insertBefore(document.createTextNode(" "), null)
-            }
+            editor.insertBefore(document.createTextNode(" "), null)
             editor.insertBefore(atdiv, null)
-            editor.insertBefore(empty, null)
+            editor.insertBefore(document.createTextNode(" "), null)
         }
 
         //处理选区包含at区域
@@ -81,20 +76,18 @@
             //左箭头
             if (e.keyCode == 37 && e.type == 'keyup') {
                 let selection = window.getSelection()
-                if (selection.isCollapsed) {
-                    //移动光标
-                    if (selection.focusNode.parentNode.className == 'filelabel') {
+                if (selection.focusNode.parentNode.className == 'filelabel') {
+                    if (selection.isCollapsed) {
+                        //移动光标
                         //光标落在at区域
                         let range = document.createRange()
                         range.selectNode(selection.focusNode.parentNode.previousSibling)
                         range.collapse(false)
                         selection.removeAllRanges()
                         selection.addRange(range)
-                    }
-                } else {
-                    if (selection.focusNode.parentNode.className == 'filelabel') {
+                    } else {
                         //选区包含at区域
-                        selection.extend(selection.focusNode, 0)
+                        selection.extend(selection.focusNode.parentNode.previousSibling, 0)
                     }
                 }
             }
